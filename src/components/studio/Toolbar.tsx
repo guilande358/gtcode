@@ -1,4 +1,4 @@
-import { Play, Square, Download, Settings, Moon, Sun, Menu, FolderOpen, Eye, Code } from 'lucide-react';
+import { Play, Square, Download, Settings, Moon, Sun, Menu, FolderOpen, Eye, Code, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { MobileView } from '@/hooks/useMobileLayout';
@@ -13,6 +13,7 @@ interface ToolbarProps {
   isMobile: boolean;
   mobileView: MobileView;
   onChangeMobileView: (view: MobileView) => void;
+  onShowExamples?: () => void;
 }
 
 export function Toolbar({
@@ -25,6 +26,7 @@ export function Toolbar({
   isMobile,
   mobileView,
   onChangeMobileView,
+  onShowExamples,
 }: ToolbarProps) {
   return (
     <header className="h-12 bg-card border-b border-border flex items-center justify-between px-3 gap-2">
@@ -109,6 +111,15 @@ export function Toolbar({
             </Button>
           </div>
         )}
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onShowExamples}>
+              <BookOpen className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Exemplos</TooltipContent>
+        </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>

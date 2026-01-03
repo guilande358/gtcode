@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useProjects } from '@/hooks/useProjects';
 import { useMobileLayout } from '@/hooks/useMobileLayout';
@@ -6,17 +6,21 @@ import { Toolbar } from './Toolbar';
 import { FileExplorer } from './FileExplorer';
 import { CodeEditor } from './CodeEditor';
 import { PreviewPanel } from './PreviewPanel';
+import { ConsolePanel, ConsoleMessage } from './ConsolePanel';
+import { ExamplesDialog } from './ExamplesDialog';
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable';
-import { cn } from '@/lib/utils';
+import { interpretGcodeForce, Scene3D } from '@/lib/gcodeforce-interpreter';
 
 export function GcodeForceStudio() {
   const { theme, toggleTheme } = useTheme();
   const { isMobile, mobileView, setMobileView } = useMobileLayout();
   const [isRunning, setIsRunning] = useState(false);
+  const [showExamples, setShowExamples] = useState(false);
+  const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
 
   const {
     projects,
@@ -31,16 +35,60 @@ export function GcodeForceStudio() {
     updateFileContent,
   } = useProjects();
 
+  // Interpret code to 3D scene
+  const interpretedScene = useMemo((): Scene3D => {
+    const code = activeFile?.content || '';
+    const result = interpretGcodeForce(code);
+    return result.scene || {
+      name: 'Empty',
+      camera: { position: [0, 5, 10], lookAt: [0, 0, 0], fov: 75 },
+      lights: [
+        { type: 'ambient', color: '#404040', intensity: 0.4 },
+        { type: 'directional', color: '#ffffff', intensity: 1, position: [5, 10, 5] }
+      ],
+      entities: []
+    };
+  }, [activeFile?.content]);
+
+  const addConsoleMessage = useCallback((type: ConsoleMessage['type'], message: string) => {
+    const newMessage: ConsoleMessage = {
+      id: `msg-${Date.now()}-${Math.random()}`,
+      type,
+      message,
+      timestamp: new Date()
+    };
+    setConsoleMessages(prev => [...prev, newMessage]);
+  }, []);
+
+  const clearConsole = useCallback(() => {
+    setConsoleMessages([]);
+  }, []);
+
   const handleRun = useCallback(() => {
     setIsRunning(true);
+    clearConsole();
+    
+    const code = activeFile?.content || '';
+    const result = interpretGcodeForce(code);
+    
+    // Log interpretation results
+    result.logs.forEach(log => addConsoleMessage('info', log));
+    result.errors.forEach(err => addConsoleMessage('error', err));
+    
+    if (result.errors.length === 0) {
+      addConsoleMessage('success', '✓ Jogo iniciado com sucesso!');
+      addConsoleMessage('info', 'Use WASD para mover objetos controláveis');
+    }
+    
     if (isMobile) {
       setMobileView('preview');
     }
-  }, [isMobile, setMobileView]);
+  }, [activeFile?.content, isMobile, setMobileView, addConsoleMessage, clearConsole]);
 
   const handleStop = useCallback(() => {
     setIsRunning(false);
-  }, []);
+    addConsoleMessage('info', '■ Jogo parado');
+  }, [addConsoleMessage]);
 
   const handleCodeChange = useCallback((value: string) => {
     if (activeProject && activeFile) {
@@ -48,7 +96,16 @@ export function GcodeForceStudio() {
     }
   }, [activeProject, activeFile, updateFileContent]);
 
-  // Listen for F5 keyboard shortcut from editor
+  const handleSelectExample = useCallback((code: string, name: string) => {
+    // Create a new project with the example
+    const project = createProject(name);
+    if (project && project.files[0]) {
+      updateFileContent(project.id, project.files[0].id, code);
+      addConsoleMessage('success', `Exemplo "${name}" carregado!`);
+    }
+  }, [createProject, updateFileContent, addConsoleMessage]);
+
+  // Listen for F5 keyboard shortcut
   useEffect(() => {
     const handleRunEvent = () => {
       if (isRunning) {
@@ -93,6 +150,7 @@ export function GcodeForceStudio() {
           isMobile={isMobile}
           mobileView={mobileView}
           onChangeMobileView={setMobileView}
+          onShowExamples={() => setShowExamples(true)}
         />
 
         <div className="flex-1 overflow-hidden">
@@ -123,11 +181,17 @@ export function GcodeForceStudio() {
 
           {mobileView === 'preview' && (
             <PreviewPanel
+              scene={interpretedScene}
               isRunning={isRunning}
-              code={activeFile?.content || ''}
             />
           )}
         </div>
+
+        <ExamplesDialog
+          open={showExamples}
+          onOpenChange={setShowExamples}
+          onSelectExample={handleSelectExample}
+        />
       </div>
     );
   }
@@ -145,6 +209,7 @@ export function GcodeForceStudio() {
         isMobile={isMobile}
         mobileView={mobileView}
         onChangeMobileView={setMobileView}
+        onShowExamples={() => setShowExamples(true)}
       />
 
       <div className="flex-1 overflow-hidden">
@@ -166,13 +231,27 @@ export function GcodeForceStudio() {
 
           <ResizableHandle withHandle />
 
-          {/* Code Editor */}
+          {/* Code Editor + Console */}
           <ResizablePanel defaultSize={45} minSize={30}>
-            <CodeEditor
-              value={activeFile?.content || '// Selecione um arquivo'}
-              onChange={handleCodeChange}
-              theme={theme}
-            />
+            <ResizablePanelGroup direction="vertical">
+              <ResizablePanel defaultSize={75} minSize={40}>
+                <CodeEditor
+                  value={activeFile?.content || '// Selecione um arquivo'}
+                  onChange={handleCodeChange}
+                  theme={theme}
+                />
+              </ResizablePanel>
+              
+              <ResizableHandle withHandle />
+              
+              <ResizablePanel defaultSize={25} minSize={15}>
+                <ConsolePanel
+                  messages={consoleMessages}
+                  onClear={clearConsole}
+                  className="h-full"
+                />
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
@@ -180,12 +259,18 @@ export function GcodeForceStudio() {
           {/* Preview Panel */}
           <ResizablePanel defaultSize={40} minSize={25}>
             <PreviewPanel
+              scene={interpretedScene}
               isRunning={isRunning}
-              code={activeFile?.content || ''}
             />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
+
+      <ExamplesDialog
+        open={showExamples}
+        onOpenChange={setShowExamples}
+        onSelectExample={handleSelectExample}
+      />
     </div>
   );
 }
