@@ -1,0 +1,51 @@
+{
+  "toolbar": {
+    "run": "Run",
+    "stop": "Stop",
+    "export": "Export",
+    "examples": "Examples",
+    "settings": "Settings",
+    "resetCamera": "Reset Camera"
+  },
+  "console": {
+    "clear": "Clear",
+    "errors": "Errors",
+    "logs": "Logs",
+    "title": "Console",
+    "gameStarted": "✓ Game started successfully!",
+    "gameStopped": "■ Game stopped"
+  },
+  "preview": {
+    "fps": "FPS",
+    "entities": "entities",
+    "running": "Running",
+    "moveHint": "Use WASD to move, Space to jump"
+  },
+  "examples": {
+    "title": "Examples",
+    "description": "Select an example to load",
+    "helloWorld": "Hello World 3D",
+    "controllableCube": "Controllable Cube",
+    "platformer": "Platform with Physics",
+    "audioDemo": "Audio Demo"
+  },
+  "shapes": {
+    "gallery": "Shapes Gallery"
+  },
+  "files": {
+    "title": "Files",
+    "newProject": "New Project",
+    "newFile": "New File",
+    "delete": "Delete"
+  },
+  "audio": {
+    "music": "Music",
+    "sfx": "Effects",
+    "mute": "Mute"
+  },
+  "physics": {
+    "gravity": "Gravity",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  }
+}

@@ -21,7 +21,9 @@ export interface Token {
   column: number;
 }
 
+// Keywords in both Portuguese and English
 const KEYWORDS = [
+  // Portuguese
   'projeto', 'versao', 'cena', 'entidade', 'modelo', 'primitivo',
   'fisica', 'controle', 'script', 'interface', 'biblioteca',
   'camera', 'luz', 'som', 'textura', 'ao_iniciar', 'a_cada_frame',
@@ -34,7 +36,20 @@ const KEYWORDS = [
   'operacao', 'uniao', 'subtracao', 'intersecao',
   'terreno', 'noise', 'perlin', 'gradiente', 'resolucao', 'amplitude',
   'tocar', 'pausar', 'parar', 'loop', 'volume',
-  'carregar', 'destruir', 'mover_para', 'olhar_para', 'distancia'
+  'carregar', 'destruir', 'mover_para', 'olhar_para', 'distancia',
+  // English equivalents
+  'project', 'version', 'scene', 'entity', 'model', 'primitive',
+  'physics', 'control', 'library',
+  'light', 'sound', 'texture', 'onInit', 'onFrame',
+  'onCollide', 'onClick', 'variable', 'constant', 'function',
+  'if', 'else', 'while', 'for', 'return', 'true', 'false',
+  'type', 'color', 'position', 'rotation', 'scale', 'size',
+  'active', 'mass', 'gravity', 'static', 'dynamic', 'kinematic', 'speed',
+  'keyboard', 'text', 'button', 'image',
+  'font', 'content', 'icon', 'radius', 'height', 'width',
+  'operation', 'union', 'subtraction', 'intersection',
+  'terrain', 'resolution', 'play', 'pause', 'stop',
+  'load', 'destroy', 'moveTo', 'lookAt'
 ];
 
 const OPERATORS = ['+', '-', '*', '/', '%', '=', '==', '!=', '<', '>', '<=', '>=', '&&', '||', '!', '+=', '-=', '*=', '/='];
