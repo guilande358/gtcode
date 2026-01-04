@@ -1,6 +1,6 @@
 // GcodeForce Interpreter - Converts AST to 3D scene data
 
-import { Parser, ProjectNode, SceneNode, EntityNode, LightNode, CameraNode } from './gcodeforce-parser';
+import { Parser, ProjectNode, SceneNode, EntityNode, LightNode, CameraNode, ScriptNode } from './gcodeforce-parser';
 
 export interface Scene3D {
   name: string;
@@ -20,6 +20,12 @@ export interface Light3D {
   color: string;
   intensity: number;
   position?: [number, number, number];
+}
+
+export interface ScriptEvent {
+  type: 'onInit' | 'onFrame' | 'onCollide';
+  target?: string;
+  body: string;
 }
 
 export interface Entity3D {
@@ -42,6 +48,7 @@ export interface Entity3D {
     keys: string;
     speed: number;
   };
+  scripts: ScriptEvent[];
 }
 
 export interface InterpreterResult {
@@ -195,10 +202,33 @@ export class Interpreter {
         input: control?.input || 'teclado',
         keys: control?.keys || 'WASD',
         speed: control?.speed || 5
-      }
+      },
+      scripts: this.interpretScripts(entityNode.scripts)
     };
 
     return entity;
+  }
+
+  private interpretScripts(scriptNodes?: ScriptNode[]): ScriptEvent[] {
+    if (!scriptNodes) return [];
+    
+    return scriptNodes.map(script => ({
+      type: this.mapEventType(script.event),
+      target: script.target,
+      body: script.body
+    }));
+  }
+
+  private mapEventType(event: string): 'onInit' | 'onFrame' | 'onCollide' {
+    const eventMap: Record<string, 'onInit' | 'onFrame' | 'onCollide'> = {
+      'ao_iniciar': 'onInit',
+      'onInit': 'onInit',
+      'a_cada_frame': 'onFrame',
+      'onFrame': 'onFrame',
+      'ao_colidir': 'onCollide',
+      'onCollide': 'onCollide'
+    };
+    return eventMap[event] || 'onInit';
   }
 
   private mapPrimitive(primitive: string): Entity3D['primitive'] {

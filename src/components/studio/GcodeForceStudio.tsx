@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/useTheme';
 import { useProjects } from '@/hooks/useProjects';
 import { useMobileLayout } from '@/hooks/useMobileLayout';
@@ -14,8 +15,10 @@ import {
   ResizableHandle,
 } from '@/components/ui/resizable';
 import { interpretGcodeForce, Scene3D } from '@/lib/gcodeforce-interpreter';
+import { resumeAudioContext } from '@/lib/procedural-audio';
 
 export function GcodeForceStudio() {
+  const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { isMobile, mobileView, setMobileView } = useMobileLayout();
   const [isRunning, setIsRunning] = useState(false);
@@ -64,7 +67,10 @@ export function GcodeForceStudio() {
     setConsoleMessages([]);
   }, []);
 
-  const handleRun = useCallback(() => {
+  const handleRun = useCallback(async () => {
+    // Resume audio context on user interaction
+    await resumeAudioContext();
+    
     setIsRunning(true);
     clearConsole();
     
@@ -76,19 +82,19 @@ export function GcodeForceStudio() {
     result.errors.forEach(err => addConsoleMessage('error', err));
     
     if (result.errors.length === 0) {
-      addConsoleMessage('success', '✓ Jogo iniciado com sucesso!');
-      addConsoleMessage('info', 'Use WASD para mover objetos controláveis');
+      addConsoleMessage('success', t('console.gameStarted', '✓ Game started successfully!'));
+      addConsoleMessage('info', t('preview.moveHint'));
     }
     
     if (isMobile) {
       setMobileView('preview');
     }
-  }, [activeFile?.content, isMobile, setMobileView, addConsoleMessage, clearConsole]);
+  }, [activeFile?.content, isMobile, setMobileView, addConsoleMessage, clearConsole, t]);
 
   const handleStop = useCallback(() => {
     setIsRunning(false);
-    addConsoleMessage('info', '■ Jogo parado');
-  }, [addConsoleMessage]);
+    addConsoleMessage('info', t('console.gameStopped', '■ Game stopped'));
+  }, [addConsoleMessage, t]);
 
   const handleCodeChange = useCallback((value: string) => {
     if (activeProject && activeFile) {
@@ -183,6 +189,7 @@ export function GcodeForceStudio() {
             <PreviewPanel
               scene={interpretedScene}
               isRunning={isRunning}
+              onConsoleMessage={addConsoleMessage}
             />
           )}
         </div>
@@ -261,6 +268,7 @@ export function GcodeForceStudio() {
             <PreviewPanel
               scene={interpretedScene}
               isRunning={isRunning}
+              onConsoleMessage={addConsoleMessage}
             />
           </ResizablePanel>
         </ResizablePanelGroup>

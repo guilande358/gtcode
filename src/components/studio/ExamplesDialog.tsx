@@ -5,14 +5,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Box, Gamepad2, Mountain, Zap } from 'lucide-react';
+import { Box, Gamepad2, Mountain, Zap, Volume2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Example {
   id: string;
-  name: string;
-  description: string;
+  nameKey: string;
+  descriptionKey: string;
   icon: React.ReactNode;
   code: string;
 }
@@ -20,124 +20,168 @@ interface Example {
 const EXAMPLES: Example[] = [
   {
     id: 'hello-world',
-    name: 'Olá Mundo 3D',
-    description: 'Um cubo simples no centro da cena',
+    nameKey: 'examples.helloWorld',
+    descriptionKey: 'A simple cube in the center of the scene',
     icon: <Box className="h-6 w-6" />,
-    code: `// Olá Mundo 3D em GcodeForce
-projeto "Olá Mundo" versao "1.0"
+    code: `// Hello World 3D in GcodeForce
+project "Hello World" version "1.0"
 
-cena Principal {
-  camera posicao(0, 5, 10)
-  luz tipo("direcional") cor(#FFFFFF)
+scene Main {
+  camera position(0, 5, 10)
+  light type("directional") color(#FFFFFF)
   
-  entidade Cubo {
-    modelo primitivo("cubo") tamanho(2, 2, 2) cor(#4A90D9)
+  entity Cube {
+    model primitive("box") size(2, 2, 2) color(#4A90D9)
   }
 }`
   },
   {
     id: 'controllable-cube',
-    name: 'Cubo Controlável',
-    description: 'Use WASD para mover o cubo pela cena',
+    nameKey: 'examples.controllableCube',
+    descriptionKey: 'Use WASD to move the cube',
     icon: <Gamepad2 className="h-6 w-6" />,
-    code: `// Cubo Controlável com WASD
-projeto "Cubo Controlável" versao "1.0"
+    code: `// Controllable Cube with Physics
+project "Controllable Cube" version "1.0"
 
-cena Principal {
-  camera posicao(0, 8, 12)
-  luz tipo("direcional") cor(#FFFFFF)
+scene Main {
+  camera position(0, 8, 12)
+  light type("directional") color(#FFFFFF)
   
-  entidade Jogador {
-    modelo primitivo("cubo") tamanho(1, 1, 1) cor(#FF6B6B) posicao(0, 0.5, 0)
-    fisica ativo(true) massa(1) gravidade(false)
-    controle teclado("WASD") velocidade(8)
+  entity Player {
+    model primitive("box") size(1, 1, 1) color(#FF6B6B) position(0, 2, 0)
+    physics active(true) mass(1) gravity(true)
+    control keyboard("WASD") speed(8)
   }
   
-  entidade Chao {
-    modelo primitivo("plano") tamanho(20, 1, 20) cor(#4ECDC4)
-    fisica estatico(true)
+  entity Ground {
+    model primitive("plane") size(20, 1, 20) color(#4ECDC4)
+    physics static(true)
   }
 }`
   },
   {
-    id: 'obstacles',
-    name: 'Cenário com Obstáculos',
-    description: 'Cena com múltiplos objetos e um jogador controlável',
+    id: 'platformer',
+    nameKey: 'examples.platformer',
+    descriptionKey: 'Platform game with gravity and jump (Space)',
     icon: <Mountain className="h-6 w-6" />,
-    code: `// Cenário com Obstáculos
-projeto "Obstáculos" versao "1.0"
+    code: `// Platform Game with Physics
+project "Platformer" version "1.0"
 
-cena Principal {
-  camera posicao(0, 15, 20)
-  luz tipo("direcional") cor(#FFE4B5) posicao(10, 20, 10)
+scene Main {
+  camera position(0, 10, 20)
+  light type("directional") color(#FFE4B5) position(10, 20, 10)
   
-  entidade Jogador {
-    modelo primitivo("esfera") tamanho(1, 1, 1) cor(#FF6B6B) posicao(0, 0.5, 0)
-    fisica ativo(true) massa(1) gravidade(false)
-    controle teclado("WASD") velocidade(6)
+  entity Player {
+    model primitive("box") size(1, 2, 1) color(#FF6B6B) position(0, 5, 0)
+    physics active(true) mass(1) gravity(true)
+    control keyboard("WASD") speed(6)
   }
   
-  entidade Chao {
-    modelo primitivo("plano") tamanho(30, 1, 30) cor(#2D5016)
-    fisica estatico(true)
+  entity Ground {
+    model primitive("plane") size(30, 1, 30) color(#2D5016)
+    physics static(true)
   }
   
-  entidade Obstaculo1 {
-    modelo primitivo("cubo") tamanho(2, 3, 2) cor(#8B4513) posicao(5, 1.5, 3)
-    fisica estatico(true)
+  entity Platform1 {
+    model primitive("box") size(5, 0.5, 3) color(#8B4513) position(5, 2, 0)
+    physics static(true)
   }
   
-  entidade Obstaculo2 {
-    modelo primitivo("cilindro") tamanho(1.5, 4, 1.5) cor(#8B4513) posicao(-4, 2, -2)
-    fisica estatico(true)
+  entity Platform2 {
+    model primitive("box") size(4, 0.5, 4) color(#8B4513) position(-4, 4, -3)
+    physics static(true)
   }
   
-  entidade Obstaculo3 {
-    modelo primitivo("cubo") tamanho(3, 1, 3) cor(#8B4513) posicao(0, 0.5, -6)
-    fisica estatico(true)
+  entity Platform3 {
+    model primitive("box") size(6, 0.5, 3) color(#8B4513) position(0, 6, 5)
+    physics static(true)
   }
   
-  entidade Meta {
-    modelo primitivo("esfera") tamanho(1.5, 1.5, 1.5) cor(#FFD700) posicao(-5, 1, 7)
+  entity Goal {
+    model primitive("sphere") size(1, 1, 1) color(#FFD700) position(0, 7.5, 5)
+  }
+}`
+  },
+  {
+    id: 'audio-demo',
+    nameKey: 'examples.audioDemo',
+    descriptionKey: 'Demo with collision sounds and procedural audio',
+    icon: <Volume2 className="h-6 w-6" />,
+    code: `// Audio Demo with Physics
+project "Audio Demo" version "1.0"
+
+scene Main {
+  camera position(0, 10, 15)
+  light type("directional") color(#FFFFFF)
+  
+  entity Player {
+    model primitive("sphere") size(1, 1, 1) color(#FF6B6B) position(0, 5, 0)
+    physics active(true) mass(1) gravity(true)
+    control keyboard("WASD") speed(5)
+  }
+  
+  entity Ball1 {
+    model primitive("sphere") size(0.8, 0.8, 0.8) color(#4ECDC4) position(3, 8, 2)
+    physics active(true) mass(0.5) gravity(true)
+  }
+  
+  entity Ball2 {
+    model primitive("sphere") size(1.2, 1.2, 1.2) color(#45B7D1) position(-2, 10, -1)
+    physics active(true) mass(0.8) gravity(true)
+  }
+  
+  entity Box1 {
+    model primitive("box") size(1.5, 1.5, 1.5) color(#96CEB4) position(4, 6, -3)
+    physics active(true) mass(1) gravity(true)
+  }
+  
+  entity Ground {
+    model primitive("plane") size(25, 1, 25) color(#333344)
+    physics static(true)
+  }
+  
+  entity Ramp {
+    model primitive("box") size(8, 0.3, 4) color(#8B4513) position(-5, 1, 0) rotation(0, 0, -15)
+    physics static(true)
   }
 }`
   },
   {
     id: 'shapes',
-    name: 'Galeria de Formas',
-    description: 'Demonstração de todas as primitivas disponíveis',
+    nameKey: 'shapes.gallery',
+    descriptionKey: 'All available 3D primitives',
     icon: <Zap className="h-6 w-6" />,
-    code: `// Galeria de Formas 3D
-projeto "Galeria" versao "1.0"
+    code: `// 3D Shapes Gallery
+project "Gallery" version "1.0"
 
-cena Principal {
-  camera posicao(0, 10, 20)
-  luz tipo("direcional") cor(#FFFFFF) posicao(5, 15, 10)
-  luz tipo("ambiente") cor(#404080)
+scene Main {
+  camera position(0, 10, 20)
+  light type("directional") color(#FFFFFF) position(5, 15, 10)
+  light type("ambient") color(#404080)
   
-  entidade Cubo {
-    modelo primitivo("cubo") tamanho(2, 2, 2) cor(#FF6B6B) posicao(-8, 1, 0)
+  entity Cube {
+    model primitive("box") size(2, 2, 2) color(#FF6B6B) position(-8, 1, 0)
   }
   
-  entidade Esfera {
-    modelo primitivo("esfera") tamanho(2, 2, 2) cor(#4ECDC4) posicao(-4, 1, 0)
+  entity Sphere {
+    model primitive("sphere") size(2, 2, 2) color(#4ECDC4) position(-4, 1, 0)
   }
   
-  entidade Cilindro {
-    modelo primitivo("cilindro") tamanho(1.5, 3, 1.5) cor(#45B7D1) posicao(0, 1.5, 0)
+  entity Cylinder {
+    model primitive("cylinder") size(1.5, 3, 1.5) color(#45B7D1) position(0, 1.5, 0)
   }
   
-  entidade Cone {
-    modelo primitivo("cone") tamanho(2, 3, 2) cor(#96CEB4) posicao(4, 1.5, 0)
+  entity Cone {
+    model primitive("cone") size(2, 3, 2) color(#96CEB4) position(4, 1.5, 0)
   }
   
-  entidade Torus {
-    modelo primitivo("torus") tamanho(2, 2, 2) cor(#DDA0DD) posicao(8, 1.5, 0)
+  entity Torus {
+    model primitive("torus") size(2, 2, 2) color(#DDA0DD) position(8, 1.5, 0)
   }
   
-  entidade Chao {
-    modelo primitivo("plano") tamanho(25, 1, 15) cor(#333344)
-    fisica estatico(true)
+  entity Ground {
+    model primitive("plane") size(25, 1, 15) color(#333344)
+    physics static(true)
   }
 }`
   }
@@ -150,8 +194,11 @@ interface ExamplesDialogProps {
 }
 
 export function ExamplesDialog({ open, onOpenChange, onSelectExample }: ExamplesDialogProps) {
+  const { t } = useTranslation();
+  
   const handleSelect = (example: Example) => {
-    onSelectExample(example.code, example.name);
+    const name = t(example.nameKey, { defaultValue: example.nameKey });
+    onSelectExample(example.code, name);
     onOpenChange(false);
   };
 
@@ -159,9 +206,9 @@ export function ExamplesDialog({ open, onOpenChange, onSelectExample }: Examples
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Exemplos de Projetos</DialogTitle>
+          <DialogTitle>{t('examples.title')}</DialogTitle>
           <DialogDescription>
-            Selecione um exemplo para começar. O código será carregado no editor.
+            {t('examples.description')}
           </DialogDescription>
         </DialogHeader>
         
@@ -177,9 +224,11 @@ export function ExamplesDialog({ open, onOpenChange, onSelectExample }: Examples
                   {example.icon}
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-foreground">{example.name}</h4>
+                  <h4 className="font-medium text-foreground">
+                    {t(example.nameKey, { defaultValue: example.nameKey })}
+                  </h4>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {example.description}
+                    {example.descriptionKey}
                   </p>
                 </div>
               </button>

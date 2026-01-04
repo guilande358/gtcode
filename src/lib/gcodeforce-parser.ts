@@ -73,6 +73,7 @@ export interface ControlNode extends ASTNode {
 export interface ScriptNode extends ASTNode {
   type: 'Script';
   event: string;
+  target?: string; // For onCollide events
   body: string;
 }
 
@@ -104,7 +105,7 @@ export class Parser {
   private parseProject(): ProjectNode {
     const project: ProjectNode = {
       type: 'Project',
-      name: 'Sem nome',
+      name: 'Unnamed',
       version: '1.0',
       scenes: []
     };
@@ -113,18 +114,19 @@ export class Parser {
     while (!this.isEnd()) {
       this.skipNewlines();
       
-      if (this.check('KEYWORD', 'projeto')) {
+      // Support both Portuguese and English keywords
+      if (this.check('KEYWORD', 'projeto') || this.check('KEYWORD', 'project')) {
         this.advance();
         if (this.check('STRING')) {
           project.name = this.advance().value.replace(/"/g, '');
         }
-        if (this.check('KEYWORD', 'versao')) {
+        if (this.check('KEYWORD', 'versao') || this.check('KEYWORD', 'version')) {
           this.advance();
           if (this.check('STRING')) {
             project.version = this.advance().value.replace(/"/g, '');
           }
         }
-      } else if (this.check('KEYWORD', 'cena')) {
+      } else if (this.check('KEYWORD', 'cena') || this.check('KEYWORD', 'scene')) {
         const scene = this.parseScene();
         if (scene) {
           project.scenes.push(scene);
@@ -138,11 +140,12 @@ export class Parser {
   }
 
   private parseScene(): SceneNode | null {
-    if (!this.consume('KEYWORD', 'cena')) return null;
+    // Support both cena and scene
+    if (!this.consume('KEYWORD', 'cena') && !this.consume('KEYWORD', 'scene')) return null;
 
     const scene: SceneNode = {
       type: 'Scene',
-      name: 'Principal',
+      name: 'Main',
       lights: [],
       entities: []
     };
@@ -152,7 +155,7 @@ export class Parser {
     }
 
     if (!this.consume('PUNCTUATION', '{')) {
-      this.error('Esperado "{" após nome da cena');
+      this.error('Expected "{" after scene name');
       return scene;
     }
 
@@ -161,10 +164,10 @@ export class Parser {
 
       if (this.check('KEYWORD', 'camera')) {
         scene.camera = this.parseCamera();
-      } else if (this.check('KEYWORD', 'luz')) {
+      } else if (this.check('KEYWORD', 'luz') || this.check('KEYWORD', 'light')) {
         const light = this.parseLight();
         if (light) scene.lights.push(light);
-      } else if (this.check('KEYWORD', 'entidade')) {
+      } else if (this.check('KEYWORD', 'entidade') || this.check('KEYWORD', 'entity')) {
         const entity = this.parseEntity();
         if (entity) scene.entities.push(entity);
       } else if (this.check('PUNCTUATION', '}')) {
@@ -187,7 +190,8 @@ export class Parser {
     this.advance(); // consume 'camera'
 
     while (!this.isEnd() && !this.check('NEWLINE') && !this.check('KEYWORD') && !this.check('PUNCTUATION', '}')) {
-      if (this.check('IDENTIFIER', 'posicao') || this.check('KEYWORD', 'posicao')) {
+      if (this.check('IDENTIFIER', 'posicao') || this.check('KEYWORD', 'posicao') ||
+          this.check('IDENTIFIER', 'position') || this.check('KEYWORD', 'position')) {
         this.advance();
         camera.position = this.parseVector3() || [0, 5, 10];
       } else {
@@ -201,14 +205,14 @@ export class Parser {
   private parseLight(): LightNode {
     const light: LightNode = {
       type: 'Light',
-      lightType: 'direcional',
+      lightType: 'directional',
       color: '#FFFFFF'
     };
 
-    this.advance(); // consume 'luz'
+    this.advance(); // consume 'luz' or 'light'
 
     while (!this.isEnd() && !this.check('NEWLINE') && !this.check('KEYWORD') && !this.check('PUNCTUATION', '}')) {
-      if (this.check('KEYWORD', 'tipo') || this.check('IDENTIFIER', 'tipo')) {
+      if (this.checkAny(['tipo', 'type'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('STRING')) {
@@ -216,7 +220,7 @@ export class Parser {
           }
           this.consume('PUNCTUATION', ')');
         }
-      } else if (this.check('KEYWORD', 'cor') || this.check('IDENTIFIER', 'cor')) {
+      } else if (this.checkAny(['cor', 'color'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('COLOR')) {
@@ -224,7 +228,7 @@ export class Parser {
           }
           this.consume('PUNCTUATION', ')');
         }
-      } else if (this.check('KEYWORD', 'posicao') || this.check('IDENTIFIER', 'posicao')) {
+      } else if (this.checkAny(['posicao', 'position'])) {
         this.advance();
         light.position = this.parseVector3() || undefined;
       } else {
@@ -236,11 +240,12 @@ export class Parser {
   }
 
   private parseEntity(): EntityNode | null {
-    if (!this.consume('KEYWORD', 'entidade')) return null;
+    // Support both entidade and entity
+    if (!this.consume('KEYWORD', 'entidade') && !this.consume('KEYWORD', 'entity')) return null;
 
     const entity: EntityNode = {
       type: 'Entity',
-      name: 'Entidade'
+      name: 'Entity'
     };
 
     if (this.check('IDENTIFIER')) {
@@ -254,11 +259,11 @@ export class Parser {
     while (!this.isEnd() && !this.check('PUNCTUATION', '}')) {
       this.skipNewlines();
 
-      if (this.check('KEYWORD', 'modelo')) {
+      if (this.check('KEYWORD', 'modelo') || this.check('KEYWORD', 'model')) {
         entity.model = this.parseModel();
-      } else if (this.check('KEYWORD', 'fisica')) {
+      } else if (this.check('KEYWORD', 'fisica') || this.check('KEYWORD', 'physics')) {
         entity.physics = this.parsePhysics();
-      } else if (this.check('KEYWORD', 'controle')) {
+      } else if (this.check('KEYWORD', 'controle') || this.check('KEYWORD', 'control')) {
         entity.control = this.parseControl();
       } else if (this.check('PUNCTUATION', '}')) {
         break;
@@ -271,6 +276,16 @@ export class Parser {
     return entity;
   }
 
+  // Helper to check multiple keyword variants
+  private checkAny(values: string[]): boolean {
+    for (const val of values) {
+      if (this.check('KEYWORD', val) || this.check('IDENTIFIER', val)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private parseModel(): ModelNode {
     const model: ModelNode = {
       type: 'Model',
@@ -278,10 +293,13 @@ export class Parser {
       color: '#888888'
     };
 
-    this.advance(); // consume 'modelo'
+    this.advance(); // consume 'modelo' or 'model'
 
-    while (!this.isEnd() && !this.check('NEWLINE') && !this.check('KEYWORD', 'fisica') && !this.check('KEYWORD', 'controle') && !this.check('PUNCTUATION', '}')) {
-      if (this.check('KEYWORD', 'primitivo') || this.check('IDENTIFIER', 'primitivo')) {
+    while (!this.isEnd() && !this.check('NEWLINE') && 
+           !this.check('KEYWORD', 'fisica') && !this.check('KEYWORD', 'physics') &&
+           !this.check('KEYWORD', 'controle') && !this.check('KEYWORD', 'control') && 
+           !this.check('PUNCTUATION', '}')) {
+      if (this.checkAny(['primitivo', 'primitive'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('STRING')) {
@@ -289,10 +307,10 @@ export class Parser {
           }
           this.consume('PUNCTUATION', ')');
         }
-      } else if (this.check('KEYWORD', 'tamanho') || this.check('IDENTIFIER', 'tamanho')) {
+      } else if (this.checkAny(['tamanho', 'size'])) {
         this.advance();
         model.size = this.parseVector3() || [1, 1, 1];
-      } else if (this.check('KEYWORD', 'cor') || this.check('IDENTIFIER', 'cor')) {
+      } else if (this.checkAny(['cor', 'color'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('COLOR')) {
@@ -300,13 +318,13 @@ export class Parser {
           }
           this.consume('PUNCTUATION', ')');
         }
-      } else if (this.check('KEYWORD', 'posicao') || this.check('IDENTIFIER', 'posicao')) {
+      } else if (this.checkAny(['posicao', 'position'])) {
         this.advance();
         model.position = this.parseVector3() || undefined;
-      } else if (this.check('KEYWORD', 'rotacao') || this.check('IDENTIFIER', 'rotacao')) {
+      } else if (this.checkAny(['rotacao', 'rotation'])) {
         this.advance();
         model.rotation = this.parseVector3() || undefined;
-      } else if (this.check('KEYWORD', 'raio') || this.check('IDENTIFIER', 'raio')) {
+      } else if (this.checkAny(['raio', 'radius'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('NUMBER')) {
@@ -314,7 +332,7 @@ export class Parser {
           }
           this.consume('PUNCTUATION', ')');
         }
-      } else if (this.check('KEYWORD', 'altura') || this.check('IDENTIFIER', 'altura')) {
+      } else if (this.checkAny(['altura', 'height'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('NUMBER')) {
@@ -339,10 +357,13 @@ export class Parser {
       static: false
     };
 
-    this.advance(); // consume 'fisica'
+    this.advance(); // consume 'fisica' or 'physics'
 
-    while (!this.isEnd() && !this.check('NEWLINE') && !this.check('KEYWORD', 'controle') && !this.check('KEYWORD', 'modelo') && !this.check('PUNCTUATION', '}')) {
-      if (this.check('KEYWORD', 'ativo') || this.check('IDENTIFIER', 'ativo')) {
+    while (!this.isEnd() && !this.check('NEWLINE') && 
+           !this.check('KEYWORD', 'controle') && !this.check('KEYWORD', 'control') &&
+           !this.check('KEYWORD', 'modelo') && !this.check('KEYWORD', 'model') && 
+           !this.check('PUNCTUATION', '}')) {
+      if (this.checkAny(['ativo', 'active'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('KEYWORD', 'verdadeiro') || this.check('KEYWORD', 'true')) {
@@ -354,7 +375,7 @@ export class Parser {
           }
           this.consume('PUNCTUATION', ')');
         }
-      } else if (this.check('KEYWORD', 'massa') || this.check('IDENTIFIER', 'massa')) {
+      } else if (this.checkAny(['massa', 'mass'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('NUMBER')) {
@@ -362,7 +383,7 @@ export class Parser {
           }
           this.consume('PUNCTUATION', ')');
         }
-      } else if (this.check('KEYWORD', 'gravidade') || this.check('IDENTIFIER', 'gravidade')) {
+      } else if (this.checkAny(['gravidade', 'gravity'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('KEYWORD', 'verdadeiro') || this.check('KEYWORD', 'true')) {
@@ -374,7 +395,7 @@ export class Parser {
           }
           this.consume('PUNCTUATION', ')');
         }
-      } else if (this.check('KEYWORD', 'estatico') || this.check('IDENTIFIER', 'estatico')) {
+      } else if (this.checkAny(['estatico', 'static'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('KEYWORD', 'verdadeiro') || this.check('KEYWORD', 'true')) {
@@ -397,24 +418,27 @@ export class Parser {
   private parseControl(): ControlNode {
     const control: ControlNode = {
       type: 'Control',
-      input: 'teclado',
+      input: 'keyboard',
       keys: 'WASD',
       speed: 5
     };
 
-    this.advance(); // consume 'controle'
+    this.advance(); // consume 'controle' or 'control'
 
-    while (!this.isEnd() && !this.check('NEWLINE') && !this.check('KEYWORD', 'fisica') && !this.check('KEYWORD', 'modelo') && !this.check('PUNCTUATION', '}')) {
-      if (this.check('KEYWORD', 'teclado') || this.check('IDENTIFIER', 'teclado')) {
+    while (!this.isEnd() && !this.check('NEWLINE') && 
+           !this.check('KEYWORD', 'fisica') && !this.check('KEYWORD', 'physics') &&
+           !this.check('KEYWORD', 'modelo') && !this.check('KEYWORD', 'model') && 
+           !this.check('PUNCTUATION', '}')) {
+      if (this.checkAny(['teclado', 'keyboard'])) {
         this.advance();
-        control.input = 'teclado';
+        control.input = 'keyboard';
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('STRING')) {
             control.keys = this.advance().value.replace(/"/g, '');
           }
           this.consume('PUNCTUATION', ')');
         }
-      } else if (this.check('KEYWORD', 'velocidade') || this.check('IDENTIFIER', 'velocidade')) {
+      } else if (this.checkAny(['velocidade', 'speed'])) {
         this.advance();
         if (this.consume('PUNCTUATION', '(')) {
           if (this.check('NUMBER')) {
