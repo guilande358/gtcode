@@ -4,6 +4,7 @@ import { RapierRigidBody } from '@react-three/rapier';
 import { Scene3D, Entity3D } from '@/lib/gcodeforce-interpreter';
 import { PhysicsWorld, PhysicsPrimitive, PhysicsGround } from './PhysicsWorld';
 import { GridHelper } from './Primitives';
+import { ParticleRenderer, useParticleEmitter } from './ParticleSystem';
 import { useGameInput } from '@/hooks/useGameInput';
 import { playProceduralSound } from '@/lib/procedural-audio';
 import { scriptExecutor } from '@/lib/script-executor';
@@ -19,8 +20,8 @@ export function PhysicsSceneRenderer({ scene, isRunning, onConsoleMessage }: Phy
   const { getMovementVector, isJumpPressed, resetInput } = useGameInput({ enabled: isRunning });
   const jumpCooldownRef = useRef<Map<string, number>>(new Map());
   const initialized = useRef(false);
+  const { emissionsRef, emit } = useParticleEmitter();
 
-  // Initialize scripts when running starts
   useEffect(() => {
     if (isRunning && !initialized.current) {
       scriptExecutor.initialize(scene);
@@ -36,18 +37,21 @@ export function PhysicsSceneRenderer({ scene, isRunning, onConsoleMessage }: Phy
     }
   }, [isRunning, scene, resetInput, onConsoleMessage]);
 
-  // Handle collision events
   const handleCollision = useCallback((entityId: string, otherId: string) => {
     if (!isRunning) return;
     scriptExecutor.executeOnCollide(entityId, otherId, scene);
+    
+    // Spawn collision particles
+    const entity = scene.entities.find(e => e.id === entityId);
+    if (entity) {
+      emit('spark', entity.position);
+    }
+    
     onConsoleMessage?.(`Collision: ${entityId} → ${otherId}`, 'info');
-  }, [isRunning, scene, onConsoleMessage]);
+  }, [isRunning, scene, onConsoleMessage, emit]);
 
-  // Game loop for physics-based movement
   useFrame((_, delta) => {
     if (!isRunning) return;
-
-    // Execute onFrame scripts
     scriptExecutor.executeOnFrame(scene, delta);
 
     const now = Date.now();
@@ -59,62 +63,43 @@ export function PhysicsSceneRenderer({ scene, isRunning, onConsoleMessage }: Phy
 
         const movement = getMovementVector(entity.control.keys);
         const speed = entity.control.speed;
-
-        // Get current velocity
         const currentVel = rigidBody.linvel();
 
-        // Apply movement forces
         const forceX = movement.x * speed * 10;
         const forceZ = movement.z * speed * 10;
 
-        // Set horizontal velocity directly for responsive controls
-        rigidBody.setLinvel({
-          x: forceX,
-          y: currentVel.y,
-          z: forceZ
-        }, true);
+        rigidBody.setLinvel({ x: forceX, y: currentVel.y, z: forceZ }, true);
 
-        // Jump with cooldown
         if (isJumpPressed()) {
           const lastJump = jumpCooldownRef.current.get(entity.id) || 0;
-          
-          // Check if grounded (velocity.y near zero) and cooldown passed
           if (Math.abs(currentVel.y) < 0.5 && now - lastJump > 300) {
             rigidBody.applyImpulse({ x: 0, y: entity.physics.mass * 8, z: 0 }, true);
             jumpCooldownRef.current.set(entity.id, now);
             playProceduralSound('jump');
+            
+            // Dust particles on jump
+            const pos = rigidBody.translation();
+            emit('dust', [pos.x, pos.y - entity.scale[1] / 2, pos.z]);
           }
         }
       }
     });
   });
 
-  // Store rigid body refs
   const setRigidBodyRef = useCallback((id: string, ref: RapierRigidBody | null) => {
-    if (ref) {
-      rigidBodyRefs.current.set(id, ref);
-    } else {
-      rigidBodyRefs.current.delete(id);
-    }
+    if (ref) rigidBodyRefs.current.set(id, ref);
+    else rigidBodyRefs.current.delete(id);
   }, []);
 
-  // Separate static and dynamic entities
   const staticEntities = scene.entities.filter(e => e.physics.isStatic || !e.physics.active);
   const dynamicEntities = scene.entities.filter(e => !e.physics.isStatic && e.physics.active);
 
   return (
     <PhysicsWorld gravity={[0, -9.81, 0]}>
-      {/* Lights */}
       {scene.lights.map((light, index) => {
         switch (light.type) {
           case 'ambient':
-            return (
-              <ambientLight
-                key={`light-${index}`}
-                color={light.color}
-                intensity={light.intensity}
-              />
-            );
+            return <ambientLight key={`light-${index}`} color={light.color} intensity={light.intensity} />;
           case 'directional':
             return (
               <directionalLight
@@ -128,39 +113,17 @@ export function PhysicsSceneRenderer({ scene, isRunning, onConsoleMessage }: Phy
               />
             );
           case 'point':
-            return (
-              <pointLight
-                key={`light-${index}`}
-                color={light.color}
-                intensity={light.intensity}
-                position={light.position || [0, 5, 0]}
-                castShadow
-              />
-            );
+            return <pointLight key={`light-${index}`} color={light.color} intensity={light.intensity} position={light.position || [0, 5, 0]} castShadow />;
           case 'spot':
-            return (
-              <spotLight
-                key={`light-${index}`}
-                color={light.color}
-                intensity={light.intensity}
-                position={light.position || [0, 10, 0]}
-                angle={Math.PI / 4}
-                penumbra={0.5}
-                castShadow
-              />
-            );
+            return <spotLight key={`light-${index}`} color={light.color} intensity={light.intensity} position={light.position || [0, 10, 0]} angle={Math.PI / 4} penumbra={0.5} castShadow />;
           default:
             return null;
         }
       })}
 
-      {/* Grid */}
       <GridHelper />
-
-      {/* Physics ground */}
       <PhysicsGround />
 
-      {/* Static entities */}
       {staticEntities.map(entity => (
         <PhysicsPrimitive
           key={entity.id}
@@ -171,19 +134,18 @@ export function PhysicsSceneRenderer({ scene, isRunning, onConsoleMessage }: Phy
         />
       ))}
 
-      {/* Dynamic entities */}
       {dynamicEntities.map(entity => (
         <PhysicsPrimitive
           key={entity.id}
-          entity={{
-            ...entity,
-            // Store ref callback in userData
-          }}
+          entity={entity}
           isSelected={entity.control.enabled && isRunning}
           isRunning={isRunning}
           onCollide={(otherId) => handleCollision(entity.id, otherId)}
         />
       ))}
+
+      {/* Particle system */}
+      <ParticleRenderer emissionsRef={emissionsRef} />
     </PhysicsWorld>
   );
 }

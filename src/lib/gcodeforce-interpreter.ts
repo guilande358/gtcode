@@ -1,6 +1,7 @@
 // GcodeForce Interpreter - Converts AST to 3D scene data
 
 import { Parser, ProjectNode, SceneNode, EntityNode, LightNode, CameraNode, ScriptNode } from './gcodeforce-parser';
+import { MaterialConfig, DEFAULT_MATERIAL } from '@/components/three/AdvancedMaterial';
 
 export interface Scene3D {
   name: string;
@@ -36,6 +37,7 @@ export interface Entity3D {
   rotation: [number, number, number];
   scale: [number, number, number];
   color: string;
+  material: MaterialConfig;
   physics: {
     active: boolean;
     mass: number;
@@ -71,11 +73,10 @@ export class Interpreter {
     const { ast, errors: parseErrors } = parser.parse(source);
 
     if (parseErrors.length > 0) {
-      this.errors = parseErrors.map(e => `Linha ${e.line}: ${e.message}`);
+      this.errors = parseErrors.map(e => `Line ${e.line}: ${e.message}`);
     }
 
     if (!ast || ast.scenes.length === 0) {
-      // Create a default empty scene
       return {
         scene: this.createDefaultScene(),
         errors: this.errors,
@@ -83,26 +84,16 @@ export class Interpreter {
       };
     }
 
-    this.logs.push(`Projeto: ${ast.name} v${ast.version}`);
-    
-    // Interpret first scene
+    this.logs.push(`Project: ${ast.name} v${ast.version}`);
     const scene = this.interpretScene(ast.scenes[0]);
 
-    return {
-      scene,
-      errors: this.errors,
-      logs: this.logs
-    };
+    return { scene, errors: this.errors, logs: this.logs };
   }
 
   private createDefaultScene(): Scene3D {
     return {
       name: 'Default',
-      camera: {
-        position: [0, 5, 10],
-        lookAt: [0, 0, 0],
-        fov: 75
-      },
+      camera: { position: [0, 5, 10], lookAt: [0, 0, 0], fov: 75 },
       lights: [
         { type: 'ambient', color: '#404040', intensity: 0.4 },
         { type: 'directional', color: '#ffffff', intensity: 1, position: [5, 10, 5] }
@@ -119,13 +110,13 @@ export class Interpreter {
       entities: []
     };
 
-    this.logs.push(`Cena: ${sceneNode.name}`);
+    this.logs.push(`Scene: ${sceneNode.name}`);
 
     for (const entityNode of sceneNode.entities) {
       const entity = this.interpretEntity(entityNode);
       if (entity) {
         scene.entities.push(entity);
-        this.logs.push(`  Entidade: ${entity.name} (${entity.primitive})`);
+        this.logs.push(`  Entity: ${entity.name} (${entity.primitive})`);
       }
     }
 
@@ -150,13 +141,12 @@ export class Interpreter {
     }
 
     for (const lightNode of lightNodes) {
-      const light: Light3D = {
+      lights.push({
         type: this.mapLightType(lightNode.lightType),
         color: lightNode.color || '#ffffff',
         intensity: lightNode.intensity || 1,
         position: lightNode.position
-      };
-      lights.push(light);
+      });
     }
 
     return lights;
@@ -164,14 +154,10 @@ export class Interpreter {
 
   private mapLightType(type: string): Light3D['type'] {
     const typeMap: Record<string, Light3D['type']> = {
-      'ambiente': 'ambient',
-      'ambient': 'ambient',
-      'direcional': 'directional',
-      'directional': 'directional',
-      'ponto': 'point',
-      'point': 'point',
-      'spot': 'spot',
-      'holofote': 'spot'
+      'ambiente': 'ambient', 'ambient': 'ambient',
+      'direcional': 'directional', 'directional': 'directional',
+      'ponto': 'point', 'point': 'point',
+      'spot': 'spot', 'holofote': 'spot'
     };
     return typeMap[type.toLowerCase()] || 'directional';
   }
@@ -182,15 +168,30 @@ export class Interpreter {
     const model = entityNode.model;
     const physics = entityNode.physics;
     const control = entityNode.control;
+    const color = model?.color || '#888888';
 
-    const entity: Entity3D = {
+    // Build material config from entity data
+    const material: MaterialConfig = {
+      ...DEFAULT_MATERIAL,
+      color,
+      roughness: entityNode.materialData?.roughness ?? 0.5,
+      metalness: entityNode.materialData?.metalness ?? 0,
+      opacity: entityNode.materialData?.opacity ?? 1,
+      transparent: (entityNode.materialData?.opacity ?? 1) < 1,
+      type: (entityNode.materialData?.type as MaterialConfig['type']) || 'standard',
+      wireframe: entityNode.materialData?.wireframe ?? false,
+      texture: entityNode.materialData?.texture as MaterialConfig['texture'],
+    };
+
+    return {
       id: `entity_${this.entityCounter}`,
       name: entityNode.name,
       primitive: this.mapPrimitive(model?.primitive || 'cubo'),
       position: model?.position || [0, 0, 0],
       rotation: model?.rotation || [0, 0, 0],
       scale: this.calculateScale(model),
-      color: model?.color || '#888888',
+      color,
+      material,
       physics: {
         active: physics?.active ?? false,
         mass: physics?.mass ?? 1,
@@ -205,13 +206,10 @@ export class Interpreter {
       },
       scripts: this.interpretScripts(entityNode.scripts)
     };
-
-    return entity;
   }
 
   private interpretScripts(scriptNodes?: ScriptNode[]): ScriptEvent[] {
     if (!scriptNodes) return [];
-    
     return scriptNodes.map(script => ({
       type: this.mapEventType(script.event),
       target: script.target,
@@ -221,37 +219,27 @@ export class Interpreter {
 
   private mapEventType(event: string): 'onInit' | 'onFrame' | 'onCollide' {
     const eventMap: Record<string, 'onInit' | 'onFrame' | 'onCollide'> = {
-      'ao_iniciar': 'onInit',
-      'onInit': 'onInit',
-      'a_cada_frame': 'onFrame',
-      'onFrame': 'onFrame',
-      'ao_colidir': 'onCollide',
-      'onCollide': 'onCollide'
+      'ao_iniciar': 'onInit', 'onInit': 'onInit',
+      'a_cada_frame': 'onFrame', 'onFrame': 'onFrame',
+      'ao_colidir': 'onCollide', 'onCollide': 'onCollide'
     };
     return eventMap[event] || 'onInit';
   }
 
   private mapPrimitive(primitive: string): Entity3D['primitive'] {
     const primitiveMap: Record<string, Entity3D['primitive']> = {
-      'cubo': 'box',
-      'box': 'box',
-      'esfera': 'sphere',
-      'sphere': 'sphere',
-      'cilindro': 'cylinder',
-      'cylinder': 'cylinder',
+      'cubo': 'box', 'box': 'box',
+      'esfera': 'sphere', 'sphere': 'sphere',
+      'cilindro': 'cylinder', 'cylinder': 'cylinder',
       'cone': 'cone',
-      'plano': 'plane',
-      'plane': 'plane',
-      'torus': 'torus',
-      'rosca': 'torus'
+      'plano': 'plane', 'plane': 'plane',
+      'torus': 'torus', 'rosca': 'torus'
     };
     return primitiveMap[primitive.toLowerCase()] || 'box';
   }
 
   private calculateScale(model?: { size?: [number, number, number]; radius?: number; height?: number }): [number, number, number] {
-    if (model?.size) {
-      return model.size;
-    }
+    if (model?.size) return model.size;
     if (model?.radius) {
       const r = model.radius;
       return [r, model.height || r, r];
@@ -260,7 +248,6 @@ export class Interpreter {
   }
 }
 
-// Helper function to run interpretation
 export function interpretGcodeForce(source: string): InterpreterResult {
   const interpreter = new Interpreter();
   return interpreter.interpret(source);

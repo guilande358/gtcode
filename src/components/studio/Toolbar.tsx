@@ -1,4 +1,5 @@
-import { Play, Square, Download, Settings, Moon, Sun, Menu, FolderOpen, Eye, Code, BookOpen } from 'lucide-react';
+import { Play, Square, Download, Settings, Moon, Sun, FolderOpen, Eye, Code, BookOpen } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { MobileView } from '@/hooks/useMobileLayout';
@@ -14,6 +15,7 @@ interface ToolbarProps {
   mobileView: MobileView;
   onChangeMobileView: (view: MobileView) => void;
   onShowExamples?: () => void;
+  onExport?: () => void;
 }
 
 export function Toolbar({
@@ -27,10 +29,12 @@ export function Toolbar({
   mobileView,
   onChangeMobileView,
   onShowExamples,
+  onExport,
 }: ToolbarProps) {
+  const { t } = useTranslation();
+
   return (
     <header className="h-12 bg-card border-b border-border flex items-center justify-between px-3 gap-2">
-      {/* Logo e Nome */}
       <div className="flex items-center gap-3 min-w-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -46,67 +50,40 @@ export function Toolbar({
         </span>
       </div>
 
-      {/* Controles de Execução (Centro) */}
       <div className="flex items-center gap-1">
         {isRunning ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={onStop}
-                className="gap-1.5"
-              >
+              <Button variant="destructive" size="sm" onClick={onStop} className="gap-1.5">
                 <Square className="h-4 w-4" />
-                {!isMobile && <span>Parar</span>}
+                {!isMobile && <span>{t('toolbar.stop')}</span>}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Parar execução (F5)</TooltipContent>
+            <TooltipContent>{t('toolbar.stop')} (F5)</TooltipContent>
           </Tooltip>
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                size="sm" 
-                onClick={onRun}
-                className="gap-1.5 bg-success hover:bg-success/90 text-success-foreground"
-              >
+              <Button size="sm" onClick={onRun} className="gap-1.5 bg-success hover:bg-success/90 text-success-foreground">
                 <Play className="h-4 w-4" />
-                {!isMobile && <span>Executar</span>}
+                {!isMobile && <span>{t('toolbar.run')}</span>}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Executar jogo (F5)</TooltipContent>
+            <TooltipContent>{t('toolbar.run')} (F5)</TooltipContent>
           </Tooltip>
         )}
       </div>
 
-      {/* Ações à Direita */}
       <div className="flex items-center gap-1">
-        {/* Mobile View Switcher */}
         {isMobile && (
           <div className="flex items-center bg-secondary rounded-md p-0.5">
-            <Button
-              variant={mobileView === 'files' ? 'default' : 'ghost'}
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onChangeMobileView('files')}
-            >
+            <Button variant={mobileView === 'files' ? 'default' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => onChangeMobileView('files')}>
               <FolderOpen className="h-4 w-4" />
             </Button>
-            <Button
-              variant={mobileView === 'editor' ? 'default' : 'ghost'}
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onChangeMobileView('editor')}
-            >
+            <Button variant={mobileView === 'editor' ? 'default' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => onChangeMobileView('editor')}>
               <Code className="h-4 w-4" />
             </Button>
-            <Button
-              variant={mobileView === 'preview' ? 'default' : 'ghost'}
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onChangeMobileView('preview')}
-            >
+            <Button variant={mobileView === 'preview' ? 'default' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => onChangeMobileView('preview')}>
               <Eye className="h-4 w-4" />
             </Button>
           </div>
@@ -118,38 +95,25 @@ export function Toolbar({
               <BookOpen className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Exemplos</TooltipContent>
+          <TooltipContent>{t('toolbar.examples')}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onExport}>
               <Download className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Exportar projeto</TooltipContent>
+          <TooltipContent>{t('toolbar.export')}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onToggleTheme}>
-              {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Alternar tema</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Configurações</TooltipContent>
+          <TooltipContent>{t('toolbar.settings')}</TooltipContent>
         </Tooltip>
       </div>
     </header>
