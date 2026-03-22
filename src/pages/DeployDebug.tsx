@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Monitor, Smartphone, Wifi, Usb, Play, Square, Upload, Trash2, Clock, XCircle } from 'lucide-react';
+import { ArrowLeft, Monitor, Smartphone, Wifi, Usb, Play, Square, Upload, Trash2, Clock, XCircle, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useScrcpySocket, type LogEntry } from '@/hooks/useScrcpySocket';
 import { useDebugSessions } from '@/hooks/useDebugSessions';
+import { useTheme } from '@/hooks/useTheme';
 
 const SCRCPY_PRESETS = [
   {
@@ -42,6 +43,7 @@ interface UploadedFile {
 
 export default function DeployDebug() {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const { logs, isConnected, isRunning, connect, sendCommand, interrupt, clearLogs, disconnect } = useScrcpySocket();
   const { sessions, addSession, updateSessionStatus, clearSessions } = useDebugSessions();
 
@@ -143,6 +145,16 @@ export default function DeployDebug() {
           <span className="text-primary-foreground font-bold text-sm">G</span>
         </div>
         <h1 className="text-lg font-semibold">Deploy & Device Debug</h1>
+        <div className="ml-auto">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={toggleTheme}>
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</TooltipContent>
+          </Tooltip>
+        </div>
       </header>
 
       <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
