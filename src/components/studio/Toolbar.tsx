@@ -33,6 +33,7 @@ export function Toolbar({
   onExport,
 }: ToolbarProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <header className="h-12 bg-card border-b border-border flex items-center justify-between px-3 gap-2">
