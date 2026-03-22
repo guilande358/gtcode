@@ -180,7 +180,7 @@ export class Interpreter {
       transparent: (entityNode.materialData?.opacity ?? 1) < 1,
       type: (entityNode.materialData?.type as MaterialConfig['type']) || 'standard',
       wireframe: entityNode.materialData?.wireframe ?? false,
-      texture: entityNode.materialData?.texture,
+      texture: entityNode.materialData?.texture as MaterialConfig['texture'],
     };
 
     return {

@@ -47,5 +47,17 @@
     "gravity": "Gravity",
     "enabled": "Enabled",
     "disabled": "Disabled"
+  },
+  "export": {
+    "title": "Export Game",
+    "description": "Download your game as a standalone HTML file",
+    "includePhysics": "Include Physics",
+    "includeAudio": "Include Audio",
+    "download": "Download HTML",
+    "exporting": "Exporting...",
+    "success": "Game exported successfully!",
+    "error": "Export error",
+    "lights": "lights",
+    "info1": "Standalone HTML — works offline"
   }
 }
