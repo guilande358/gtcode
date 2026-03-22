@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Monitor, Smartphone, Wifi, Usb, Play, Square, Upload, Trash2, Clock, XCircle } from 'lucide-react';
+import { ArrowLeft, Monitor, Smartphone, Wifi, Usb, Play, Square, Upload, Trash2, Clock, XCircle, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useScrcpySocket, type LogEntry } from '@/hooks/useScrcpySocket';
 import { useDebugSessions } from '@/hooks/useDebugSessions';
+import { useTheme } from '@/hooks/useTheme';
 
 const SCRCPY_PRESETS = [
   {
