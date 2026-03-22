@@ -43,6 +43,7 @@ interface UploadedFile {
 
 export default function DeployDebug() {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const { logs, isConnected, isRunning, connect, sendCommand, interrupt, clearLogs, disconnect } = useScrcpySocket();
   const { sessions, addSession, updateSessionStatus, clearSessions } = useDebugSessions();
 
