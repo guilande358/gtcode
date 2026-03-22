@@ -1,5 +1,6 @@
-import { Play, Square, Download, Settings, Moon, Sun, FolderOpen, Eye, Code, BookOpen } from 'lucide-react';
+import { Play, Square, Download, Settings, Moon, Sun, FolderOpen, Eye, Code, BookOpen, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { MobileView } from '@/hooks/useMobileLayout';
@@ -32,6 +33,7 @@ export function Toolbar({
   onExport,
 }: ToolbarProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <header className="h-12 bg-card border-b border-border flex items-center justify-between px-3 gap-2">
@@ -105,6 +107,15 @@ export function Toolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>{t('toolbar.export')}</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/deploy')}>
+              <Smartphone className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Deploy & Debug</TooltipContent>
         </Tooltip>
 
         <Tooltip>
