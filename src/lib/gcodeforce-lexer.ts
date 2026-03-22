@@ -37,6 +37,10 @@ const KEYWORDS = [
   'terreno', 'noise', 'perlin', 'gradiente', 'resolucao', 'amplitude',
   'tocar', 'pausar', 'parar', 'loop', 'volume',
   'carregar', 'destruir', 'mover_para', 'olhar_para', 'distancia',
+  'material', 'rugosidade', 'metalico', 'transparencia', 'aramado',
+  'textura_padrao', 'textura_repetir', 'intensidade', 'reflexo', 'refracao',
+  'particulas', 'quantidade', 'vida', 'cor_inicio', 'cor_fim',
+  'posicao_relativa', 'direcao', 'com',
   // English equivalents
   'project', 'version', 'scene', 'entity', 'model', 'primitive',
   'physics', 'control', 'library',
@@ -49,7 +53,10 @@ const KEYWORDS = [
   'font', 'content', 'icon', 'radius', 'height', 'width',
   'operation', 'union', 'subtraction', 'intersection',
   'terrain', 'resolution', 'play', 'pause', 'stop',
-  'load', 'destroy', 'moveTo', 'lookAt'
+  'load', 'destroy', 'moveTo', 'lookAt',
+  'roughness', 'metalness', 'opacity', 'wireframe', 'emissive',
+  'texture_pattern', 'texture_repeat', 'intensity', 'with',
+  'particles', 'count', 'lifetime', 'color_start', 'color_end'
 ];
 
 const OPERATORS = ['+', '-', '*', '/', '%', '=', '==', '!=', '<', '>', '<=', '>=', '&&', '||', '!', '+=', '-=', '*=', '/='];
