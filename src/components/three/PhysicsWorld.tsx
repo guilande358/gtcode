@@ -1,6 +1,7 @@
 import { ReactNode, useRef, useCallback } from 'react';
 import { Physics, RigidBody, CuboidCollider, BallCollider, CylinderCollider, RapierRigidBody } from '@react-three/rapier';
 import { Entity3D } from '@/lib/gcodeforce-interpreter';
+import { AdvancedMaterial } from './AdvancedMaterial';
 import { playProceduralSound } from '@/lib/procedural-audio';
 
 interface PhysicsWorldProps {
@@ -38,22 +39,18 @@ export function PhysicsPrimitive({ entity, isSelected, onCollide, isRunning }: P
   const isGroundedRef = useRef(false);
   const lastCollisionTime = useRef(0);
 
-  // Determine rigid body type
   const bodyType = entity.physics.isStatic ? 'fixed' : 
                    entity.physics.active ? 'dynamic' : 'kinematicPosition';
 
-  // Handle collision events
   const handleCollisionEnter = useCallback((event: any) => {
     const otherName = event.other.rigidBodyObject?.name || 'unknown';
     
-    // Debounce collision sounds
     const now = Date.now();
     if (now - lastCollisionTime.current > 100) {
       playProceduralSound('collision', 0.5);
       lastCollisionTime.current = now;
     }
 
-    // Check if we landed on something (for grounded state)
     if (event.other.rigidBodyObject) {
       const contactNormal = event.manifold?.normal?.();
       if (contactNormal && contactNormal.y > 0.5) {
@@ -70,33 +67,22 @@ export function PhysicsPrimitive({ entity, isSelected, onCollide, isRunning }: P
 
   const renderGeometry = () => {
     switch (entity.primitive) {
-      case 'box':
-        return <boxGeometry args={entity.scale} />;
-      case 'sphere':
-        return <sphereGeometry args={[entity.scale[0] / 2, 32, 32]} />;
-      case 'cylinder':
-        return <cylinderGeometry args={[entity.scale[0] / 2, entity.scale[0] / 2, entity.scale[1], 32]} />;
-      case 'cone':
-        return <coneGeometry args={[entity.scale[0] / 2, entity.scale[1], 32]} />;
-      case 'plane':
-        return <boxGeometry args={[entity.scale[0], 0.1, entity.scale[2]]} />;
-      case 'torus':
-        return <torusGeometry args={[entity.scale[0] / 2, entity.scale[0] / 6, 16, 48]} />;
-      default:
-        return <boxGeometry args={entity.scale} />;
+      case 'box': return <boxGeometry args={entity.scale} />;
+      case 'sphere': return <sphereGeometry args={[entity.scale[0] / 2, 32, 32]} />;
+      case 'cylinder': return <cylinderGeometry args={[entity.scale[0] / 2, entity.scale[0] / 2, entity.scale[1], 32]} />;
+      case 'cone': return <coneGeometry args={[entity.scale[0] / 2, entity.scale[1], 32]} />;
+      case 'plane': return <boxGeometry args={[entity.scale[0], 0.1, entity.scale[2]]} />;
+      case 'torus': return <torusGeometry args={[entity.scale[0] / 2, entity.scale[0] / 6, 16, 48]} />;
+      default: return <boxGeometry args={entity.scale} />;
     }
   };
 
   const renderCollider = () => {
     switch (entity.primitive) {
-      case 'sphere':
-        return <BallCollider args={[entity.scale[0] / 2]} />;
-      case 'cylinder':
-        return <CylinderCollider args={[entity.scale[1] / 2, entity.scale[0] / 2]} />;
-      case 'plane':
-        return <CuboidCollider args={[entity.scale[0] / 2, 0.05, entity.scale[2] / 2]} />;
-      default:
-        return <CuboidCollider args={[entity.scale[0] / 2, entity.scale[1] / 2, entity.scale[2] / 2]} />;
+      case 'sphere': return <BallCollider args={[entity.scale[0] / 2]} />;
+      case 'cylinder': return <CylinderCollider args={[entity.scale[1] / 2, entity.scale[0] / 2]} />;
+      case 'plane': return <CuboidCollider args={[entity.scale[0] / 2, 0.05, entity.scale[2] / 2]} />;
+      default: return <CuboidCollider args={[entity.scale[0] / 2, entity.scale[1] / 2, entity.scale[2] / 2]} />;
     }
   };
 
@@ -120,22 +106,17 @@ export function PhysicsPrimitive({ entity, isSelected, onCollide, isRunning }: P
       onCollisionExit={handleCollisionExit}
       linearDamping={0.5}
       angularDamping={0.5}
-      lockRotations={entity.control.enabled} // Lock rotation for controllable entities
+      lockRotations={entity.control.enabled}
     >
       {renderCollider()}
       <mesh castShadow receiveShadow>
         {renderGeometry()}
-        <meshStandardMaterial 
-          color={entity.color}
-          emissive={isSelected ? entity.color : '#000000'}
-          emissiveIntensity={isSelected ? 0.2 : 0}
-        />
+        <AdvancedMaterial material={entity.material} isSelected={isSelected} />
       </mesh>
     </RigidBody>
   );
 }
 
-// Ground plane with physics
 export function PhysicsGround({ size = 50 }: { size?: number }) {
   return (
     <RigidBody type="fixed" position={[0, -0.5, 0]} name="ground">
