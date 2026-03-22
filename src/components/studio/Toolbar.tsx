@@ -1,5 +1,6 @@
-import { Play, Square, Download, Settings, Moon, Sun, FolderOpen, Eye, Code, BookOpen } from 'lucide-react';
+import { Play, Square, Download, Settings, Moon, Sun, FolderOpen, Eye, Code, BookOpen, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { MobileView } from '@/hooks/useMobileLayout';
