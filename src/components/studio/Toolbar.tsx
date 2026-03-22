@@ -111,6 +111,15 @@ export function Toolbar({
 
         <Tooltip>
           <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/deploy')}>
+              <Smartphone className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Deploy & Debug</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onToggleTheme}>
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
