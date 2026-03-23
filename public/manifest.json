@@ -2,7 +2,7 @@
   "name": "GcodeForce Studio",
   "short_name": "GcodeForce",
   "description": "IDE para criação de jogos 2D/3D com linguagem em português",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#7c3aed",
