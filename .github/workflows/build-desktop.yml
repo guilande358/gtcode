@@ -1,39 +1,99 @@
-name: Build Desktop (Electron)
+name: Build Electron Desktop Apps (Production)
 
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*'  # roda automaticamente em tags como v1.0.0
+  workflow_dispatch:  # permite rodar manualmente no GitHub
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest]
-
+  build-macos:
+    runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout código
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Instalar dependências
+        run: npm ci  # usa package-lock.json para builds reprodutíveis
 
-    - name: Build web app
-      run: npm run build
+      - name: Build web app (production)
+        run: npm run build -- --mode production  # ajusta se o teu build usar vite ou outro (ex: npm run build)
 
-    - name: Sync Capacitor Electron
-      run: npx cap sync @capacitor-community/electron
+      - name: Capacitor Sync Electron
+        run: npx cap sync @capacitor-community/electron
 
-    - name: Build Electron app
-      run: npx cap build @capacitor-community/electron --prod
+      - name: Build Electron app
+        run: npx cap build @capacitor-community/electron  # sem --prod!
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: gcodeforce-desktop-${{ matrix.os }}
-        path: electron/dist/**/*
+      - name: Upload macOS artifact (.app ou .dmg)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcodeforce-electron-macos
+          path: electron/dist/**/*
+          retention-days: 7  # mantém por 1 semana
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build web app (production)
+        run: npm run build -- --mode production
+
+      - name: Capacitor Sync Electron
+        run: npx cap sync @capacitor-community/electron
+
+      - name: Build Electron app
+        run: npx cap build @capacitor-community/electron
+
+      - name: Upload Windows artifact (.exe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcodeforce-electron-windows
+          path: electron/dist/**/*
+          retention-days: 7
+
+# Opcional: job para release automática em tags
+  release:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')  # só em tags
+    steps:
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gcodeforce-electron-macos
+          path: artifacts/macos
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gcodeforce-electron-windows
+          path: artifacts/windows
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/macos/**/*
+            artifacts/windows/**/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
