@@ -3,9 +3,7 @@ name: Build Electron Desktop Apps (Production)
 on:
   push:
     branches: [ main ]
-    tags:
-      - 'v*'  # roda automaticamente em tags como v1.0.0
-  workflow_dispatch:  # permite rodar manualmente no GitHub
+  workflow_dispatch:  # permite rodar manualmente
 
 jobs:
   build-macos:
@@ -21,23 +19,28 @@ jobs:
           cache: 'npm'
 
       - name: Instalar dependências
-        run: npm ci  # usa package-lock.json para builds reprodutíveis
+        run: npm ci
 
       - name: Build web app (production)
-        run: npm run build -- --mode production  # ajusta se o teu build usar vite ou outro (ex: npm run build)
+        run: npm run build  # ou npm run build -- --mode production se for Vite
 
       - name: Capacitor Sync Electron
         run: npx cap sync @capacitor-community/electron
 
-      - name: Build Electron app
-        run: npx cap build @capacitor-community/electron  # sem --prod!
+      - name: Build Electron app (usando script interno)
+        run: |
+          cd electron
+          npm install --production  # instala só deps de prod no Electron
+          npm run build            # ou o script de build que o plugin gerou (ver package.json do electron)
+          # Se o plugin tiver electron-builder, pode ser:
+          # npx electron-builder --mac --config electron-builder.json
 
       - name: Upload macOS artifact (.app ou .dmg)
         uses: actions/upload-artifact@v4
         with:
           name: gcodeforce-electron-macos
           path: electron/dist/**/*
-          retention-days: 7  # mantém por 1 semana
+          retention-days: 7
 
   build-windows:
     runs-on: windows-latest
@@ -55,13 +58,16 @@ jobs:
         run: npm ci
 
       - name: Build web app (production)
-        run: npm run build -- --mode production
+        run: npm run build
 
       - name: Capacitor Sync Electron
         run: npx cap sync @capacitor-community/electron
 
-      - name: Build Electron app
-        run: npx cap build @capacitor-community/electron
+      - name: Build Electron app (usando script interno)
+        run: |
+          cd electron
+          npm install --production
+          npm run build  # ou npx electron-builder --win
 
       - name: Upload Windows artifact (.exe)
         uses: actions/upload-artifact@v4
@@ -69,31 +75,3 @@ jobs:
           name: gcodeforce-electron-windows
           path: electron/dist/**/*
           retention-days: 7
-
-# Opcional: job para release automática em tags
-  release:
-    needs: [build-macos, build-windows]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')  # só em tags
-    steps:
-      - name: Download macOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: gcodeforce-electron-macos
-          path: artifacts/macos
-
-      - name: Download Windows artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: gcodeforce-electron-windows
-          path: artifacts/windows
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            artifacts/macos/**/*
-            artifacts/windows/**/*
-          draft: false
-          prerelease: false
-          generate_release_notes: true
