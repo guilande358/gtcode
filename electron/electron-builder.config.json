@@ -1,6 +1,7 @@
 {
   "appId": "com.gcodeforce.studio",
   "productName": "GcodeForce Studio",
+  "version": "1.0.0",
   "directories": {
     "output": "dist",
     "buildResources": "resources"
