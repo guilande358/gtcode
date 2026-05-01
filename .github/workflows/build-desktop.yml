@@ -18,7 +18,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Instalar dependências
+      - name: Instalar dependências root
         run: npm ci
 
       - name: Build web app (production)
@@ -30,11 +30,20 @@ jobs:
       - name: Capacitor Sync Electron
         run: npx cap sync electron
 
-      - name: Build Electron app
+      - name: Instalar dependências do Electron
         run: |
           cd electron
           npm install
-          npx electron-builder build --mac -c ./electron-builder.config.json
+
+      - name: Compilar TypeScript do Electron
+        run: |
+          cd electron
+          npx tsc
+
+      - name: Build Electron app (macOS)
+        run: |
+          cd electron
+          npx electron-builder build --mac -c ./electron-builder.config.json --publish never
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -55,7 +64,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Instalar dependências
+      - name: Instalar dependências root
         run: npm ci
 
       - name: Build web app (production)
@@ -67,11 +76,20 @@ jobs:
       - name: Capacitor Sync Electron
         run: npx cap sync electron
 
-      - name: Build Electron app
+      - name: Instalar dependências do Electron
         run: |
           cd electron
           npm install
-          npx electron-builder build --win -c ./electron-builder.config.json
+
+      - name: Compilar TypeScript do Electron
+        run: |
+          cd electron
+          npx tsc
+
+      - name: Build Electron app (Windows)
+        run: |
+          cd electron
+          npx electron-builder build --win -c ./electron-builder.config.json --publish never
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
