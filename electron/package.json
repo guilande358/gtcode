@@ -17,7 +17,7 @@
     "electron:start-live": "node ./live-runner.js",
     "electron:start": "electron --inspect=5858 ./",
     "electron:pack": "electron-builder build --dir -c ./electron-builder.config.json",
-    "electron:make": "electron-builder build -c ./electron-builder.config.json -p always"
+    "electron:make": "electron-builder build -c ./electron-builder.config.json --publish never"
   },
   "dependencies": {
     "@capacitor-community/electron": "^5.0.0",
@@ -29,13 +29,7 @@
     "electron-window-state": "^5.0.3"
   },
   "devDependencies": {
-"electron": "^28.0.0",
-   "electron-rebuild": "^3.2.9",  
-    "electron-builder": "~24.6.4",
-    "typescript": "^5.0.4"
-  },
-  "keywords": [
-    "capacitor",
-    "electron"
-  ]
+    "electron": "^28.0.0",
+    "electron-builder": "~24.6.4"
+  }
 }
