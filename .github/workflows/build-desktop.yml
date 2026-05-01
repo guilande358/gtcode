@@ -1,99 +1,40 @@
-name: Build Electron Desktop Apps (Production)
+name: Build Electron
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+  push:
+    branches: [main]
 
 jobs:
-  build-macos:
-    runs-on: macos-latest
+  build:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js 22 LTS
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
 
-      - name: Instalar dependências root
+      - name: Instalar dependências
         run: npm ci
 
-      - name: Build web app (production)
+      - name: Build web
         run: npm run build
 
-      - name: Instalar Capacitor Electron
-        run: npm install @capacitor-community/electron --save-dev
-
-      - name: Capacitor Sync Electron
+      - name: Sync Electron
         run: npx cap sync electron
 
-      - name: Instalar dependências do Electron
+      - name: Build Electron app
         run: |
           cd electron
           npm install
+          npx electron-builder build --${{ runner.os == 'macOS' && 'mac' || 'win' }} --publish never
 
-      - name: Compilar TypeScript do Electron
-        run: |
-          cd electron
-          npx tsc
-
-      - name: Build Electron app (macOS)
-        run: |
-          cd electron
-          npx electron-builder build --mac -c ./electron-builder.config.json --publish never
-
-      - name: Upload macOS artifact
+      - name: Upload artefato
         uses: actions/upload-artifact@v4
         with:
-          name: gcodeforce-electron-macos
+          name: app-${{ runner.os }}
           path: electron/dist/**/*
-          retention-days: 7
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 22 LTS
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Instalar dependências root
-        run: npm ci
-
-      - name: Build web app (production)
-        run: npm run build
-
-      - name: Instalar Capacitor Electron
-        run: npm install @capacitor-community/electron --save-dev
-
-      - name: Capacitor Sync Electron
-        run: npx cap sync electron
-
-      - name: Instalar dependências do Electron
-        run: |
-          cd electron
-          npm install
-
-      - name: Compilar TypeScript do Electron
-        run: |
-          cd electron
-          npx tsc
-
-      - name: Build Electron app (Windows)
-        run: |
-          cd electron
-          npx electron-builder build --win -c ./electron-builder.config.json --publish never
-
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: gcodeforce-electron-windows
-          path: electron/dist/**/*
-          retention-days: 7
