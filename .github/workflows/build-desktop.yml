@@ -6,11 +6,8 @@ on:
     branches: [main]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  build-macos:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -31,10 +28,40 @@ jobs:
         run: |
           cd electron
           npm install
-          npx electron-builder build --${{ runner.os == 'macOS' && 'mac' || 'win' }} --publish never
+          npx electron-builder build --mac -c ./electron-builder.config.json --publish never
 
       - name: Upload artefato
         uses: actions/upload-artifact@v4
         with:
-          name: app-${{ runner.os }}
+          name: gcodeforce-macos
+          path: electron/dist/**/*
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build web
+        run: npm run build
+
+      - name: Sync Electron
+        run: npx cap sync electron
+
+      - name: Build Electron app
+        run: |
+          cd electron
+          npm install
+          npx electron-builder build --win -c ./electron-builder.config.json --publish never
+
+      - name: Upload artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcodeforce-windows
           path: electron/dist/**/*
