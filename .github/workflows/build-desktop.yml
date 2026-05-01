@@ -36,9 +36,10 @@ jobs:
           npm install
 
       - name: Compilar TypeScript do Electron
-        run: |
-          cd electron
-          npx tsc
+  run: |
+    cd electron
+    npx tsc --listFiles --verbose
+    ls -la build/src/
 
       - name: Build Electron app (macOS)
         run: |
