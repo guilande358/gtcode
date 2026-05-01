@@ -3,7 +3,7 @@ name: Build Electron Desktop Apps (Production)
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # permite rodar manualmente
+  workflow_dispatch:
 
 jobs:
   build-macos:
@@ -12,30 +12,31 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 22 LTS
+      - name: Setup Node.js 20 LTS
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'npm'
 
       - name: Instalar dependências
         run: npm ci
 
       - name: Build web app (production)
-        run: npm run build  # ou npm run build -- --mode production se for Vite
+        run: npm run build
+
+      - name: Instalar Capacitor Electron
+        run: npm install @capacitor-community/electron --save-dev
 
       - name: Capacitor Sync Electron
-        run: npx cap sync @capacitor-community/electron
+        run: npx cap sync electron
 
-      - name: Build Electron app (usando script interno)
+      - name: Build Electron app
         run: |
           cd electron
-          npm install --production  # instala só deps de prod no Electron
-          npm run build            # ou o script de build que o plugin gerou (ver package.json do electron)
-          # Se o plugin tiver electron-builder, pode ser:
-          # npx electron-builder --mac --config electron-builder.json
+          npm install
+          npx electron-builder build --mac -c ./electron-builder.config.json
 
-      - name: Upload macOS artifact (.app ou .dmg)
+      - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: gcodeforce-electron-macos
@@ -48,10 +49,10 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 22 LTS
+      - name: Setup Node.js 20 LTS
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'npm'
 
       - name: Instalar dependências
@@ -60,16 +61,19 @@ jobs:
       - name: Build web app (production)
         run: npm run build
 
-      - name: Capacitor Sync Electron
-        run: npx cap sync @capacitor-community/electron
+      - name: Instalar Capacitor Electron
+        run: npm install @capacitor-community/electron --save-dev
 
-      - name: Build Electron app (usando script interno)
+      - name: Capacitor Sync Electron
+        run: npx cap sync electron
+
+      - name: Build Electron app
         run: |
           cd electron
-          npm install --production
-          npm run build  # ou npx electron-builder --win
+          npm install
+          npx electron-builder build --win -c ./electron-builder.config.json
 
-      - name: Upload Windows artifact (.exe)
+      - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: gcodeforce-electron-windows
