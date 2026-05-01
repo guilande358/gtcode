@@ -1,18 +1,15 @@
 {
-  "compileOnSave": true,
-  "include": ["./src/**/*"],
   "compilerOptions": {
-    "outDir": "./build",
-    "importHelpers": true,
     "target": "ES2020",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "allowJs": true,
-    "skipLibCheck": true,
+    "module": "commonjs",
+    "outDir": "./build",
+    "rootDir": "./src",
     "strict": false,
-    "noEmitOnError": false,
-    "types": ["node"],
-    "typeRoots": ["./node_modules/@types"]
-  }
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "build", "app"]
 }
